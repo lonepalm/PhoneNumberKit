@@ -328,8 +328,8 @@ public final class PhoneNumberKit {
     public static func defaultMetadataCallback() throws -> Data? {
         let frameworkBundle = Bundle.phoneNumberKit
         guard
-            let jsonPath = frameworkBundle.path(forResource: "PhoneNumberMetadata", ofType: "json"),
-            let handle = FileHandle(forReadingAtPath: jsonPath) else {
+            let compressedJSONPath = frameworkBundle.path(forResource: "PhoneNumberMetadata", ofType: "json.br"),
+            let handle = FileHandle(forReadingAtPath: compressedJSONPath) else {
             throw PhoneNumberError.metadataNotFound
         }
 
@@ -341,8 +341,13 @@ public final class PhoneNumberKit {
             }
         }
 
-        let data = handle.readDataToEndOfFile()
-        return data
+        let compressedData = handle.readDataToEndOfFile()
+        
+        if let brotliAlgorithm = NSData.CompressionAlgorithm(rawValue: NSData.CompressionAlgorithm.zlib.rawValue + 1),
+           let data = try? (compressedData as NSData).decompressed(using: brotliAlgorithm) as Data { // Brotli decompress https://tijo.link/WEQjXF
+            return data
+        }
+        return nil
     }
 }
 
